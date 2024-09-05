@@ -29,6 +29,7 @@
         table {
             border-collapse: collapse;
             width: 100%;
+            margin-bottom: 20px;
         }
         th, td {
             border: 1px solid #ddd;
@@ -43,6 +44,11 @@
             padding: 10px;
             background-color: #f2f2f2;
             border-radius: 5px;
+        }
+        .amortization-table {
+            max-height: 500px;
+            overflow-y: auto;
+            margin-bottom: 30px;
         }
     </style>
 </head>
@@ -74,6 +80,7 @@
     </form>
     
     <div id="result"></div>
+    <div id="amortizationTable"></div>
 
     <footer>
         <h3>Disclaimer</h3>
@@ -87,6 +94,7 @@
             <li>Closing costs are estimated at 3% of the current principal.</li>
             <li>Monthly savings and total interest savings are calculated by comparing the current loan to the potential new loans.</li>
             <li>The break-even point is determined by dividing the closing costs by the monthly savings.</li>
+            <li>Amortization tables show the balance, principal, and interest for each payment over the life of the loan.</li>
         </ul>
     </footer>
 
@@ -116,6 +124,31 @@
 
             function calculateTotalInterest(principal, monthlyPayment, term) {
                 return monthlyPayment * term - principal;
+            }
+
+            function generateAmortizationSchedule(principal, rate, term) {
+                const monthlyRate = rate / 12 / 100;
+                const monthlyPayment = calculateMonthlyPayment(principal, rate, term);
+                let balance = principal;
+                const schedule = [];
+
+                for (let month = 1; month <= term; month++) {
+                    const interestPayment = balance * monthlyRate;
+                    const principalPayment = monthlyPayment - interestPayment;
+                    balance -= principalPayment;
+
+                    schedule.push({
+                        month,
+                        payment: monthlyPayment,
+                        principal: principalPayment,
+                        interest: interestPayment,
+                        balance: balance > 0 ? balance : 0
+                    });
+
+                    if (balance <= 0) break;
+                }
+
+                return schedule;
             }
 
             const currentMonthlyPayment = calculateMonthlyPayment(currentPrincipal, originalRate, remainingTerm);
@@ -160,6 +193,46 @@
             tableHtml += '</table>';
 
             document.getElementById('result').innerHTML = tableHtml;
+
+            // Generate amortization schedules
+            const currentSchedule = generateAmortizationSchedule(currentPrincipal, originalRate, remainingTerm);
+            const newSchedule1 = generateAmortizationSchedule(currentPrincipal, newRate1, newTerm);
+            const newSchedule2 = generateAmortizationSchedule(currentPrincipal, newRate2, newTerm);
+
+            function createMergedAmortizationTable(currentSchedule, newSchedule1, newSchedule2) {
+                let tableHtml = `<h3>Merged Amortization Schedule</h3><div class="amortization-table"><table>`;
+                tableHtml += '<tr><th>Month</th><th>Current Loan</th><th>New Loan 1</th><th>New Loan 2</th></tr>';
+                
+                const maxLength = Math.max(currentSchedule.length, newSchedule1.length, newSchedule2.length);
+                
+                for (let i = 0; i < maxLength; i++) {
+                    tableHtml += '<tr>';
+                    tableHtml += `<td>${i + 1}</td>`;
+                    
+                    const formatCell = (schedule, index) => {
+                        if (index < schedule.length) {
+                            const row = schedule[index];
+                            return `Payment: $${row.payment.toFixed(2)}<br>
+                                    Principal: $${row.principal.toFixed(2)}<br>
+                                    Interest: $${row.interest.toFixed(2)}<br>
+                                    Balance: $${row.balance.toFixed(2)}`;
+                        }
+                        return 'N/A';
+                    };
+                    
+                    tableHtml += `<td>${formatCell(currentSchedule, i)}</td>`;
+                    tableHtml += `<td>${formatCell(newSchedule1, i)}</td>`;
+                    tableHtml += `<td>${formatCell(newSchedule2, i)}</td>`;
+                    
+                    tableHtml += '</tr>';
+                }
+                
+                tableHtml += '</table></div>';
+                return tableHtml;
+            }
+
+            const mergedAmortizationTableHtml = createMergedAmortizationTable(currentSchedule, newSchedule1, newSchedule2);
+            document.getElementById('amortizationTable').innerHTML = mergedAmortizationTableHtml;
         }
     </script>
 </body>
