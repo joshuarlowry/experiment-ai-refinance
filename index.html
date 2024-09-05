@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Comparison Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        label {
+            display: inline-block;
+            width: 200px;
+            margin-bottom: 10px;
+        }
+        input {
+            width: 200px;
+            padding: 5px;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        footer {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f2f2f2;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Loan Comparison Calculator</h1>
+    <form id="loanForm">
+        <label for="originalStartDate">Original Start Date:</label>
+        <input type="date" id="originalStartDate" required><br>
+        
+        <label for="currentPrincipal">Current Principal:</label>
+        <input type="number" id="currentPrincipal" required><br>
+        
+        <label for="originalRate">Original Rate (%):</label>
+        <input type="number" step="0.001" id="originalRate" required><br>
+        
+        <label for="originalTerm">Original Term (months):</label>
+        <input type="number" id="originalTerm" required><br>
+        
+        <label for="newRate1">New Rate 1 (%):</label>
+        <input type="number" step="0.001" id="newRate1" required><br>
+        
+        <label for="newRate2">New Rate 2 (%):</label>
+        <input type="number" step="0.001" id="newRate2" required><br>
+        
+        <label for="newTerm">New Term (months):</label>
+        <input type="number" id="newTerm" required><br>
+        
+        <button type="submit">Calculate</button>
+    </form>
+    
+    <div id="result"></div>
+
+    <footer>
+        <h3>Disclaimer</h3>
+        <p>This loan comparison calculator is provided for informational purposes only. No warranties are given about the quality of this app, and it does not constitute financial advice. Please consult with a qualified financial advisor before making any financial decisions.</p>
+        
+        <h3>Calculation Method</h3>
+        <p>This calculator uses the following methods:</p>
+        <ul>
+            <li>Monthly payments are calculated using the standard amortization formula.</li>
+            <li>Total interest is calculated by subtracting the principal from the total amount paid over the loan term.</li>
+            <li>Closing costs are estimated at 3% of the current principal.</li>
+            <li>Monthly savings and total interest savings are calculated by comparing the current loan to the potential new loans.</li>
+            <li>The break-even point is determined by dividing the closing costs by the monthly savings.</li>
+        </ul>
+    </footer>
+
+    <script>
+        document.getElementById('loanForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            calculateLoanComparison();
+        });
+
+        function calculateLoanComparison() {
+            const originalStartDate = new Date(document.getElementById('originalStartDate').value);
+            const currentPrincipal = parseFloat(document.getElementById('currentPrincipal').value);
+            const originalRate = parseFloat(document.getElementById('originalRate').value);
+            const originalTerm = parseInt(document.getElementById('originalTerm').value);
+            const newRate1 = parseFloat(document.getElementById('newRate1').value);
+            const newRate2 = parseFloat(document.getElementById('newRate2').value);
+            const newTerm = parseInt(document.getElementById('newTerm').value);
+
+            const today = new Date();
+            const monthsElapsed = (today.getFullYear() - originalStartDate.getFullYear()) * 12 + today.getMonth() - originalStartDate.getMonth();
+            const remainingTerm = originalTerm - monthsElapsed;
+
+            function calculateMonthlyPayment(principal, rate, term) {
+                const monthlyRate = rate / 12 / 100;
+                return principal * (monthlyRate * Math.pow(1 + monthlyRate, term)) / (Math.pow(1 + monthlyRate, term) - 1);
+            }
+
+            function calculateTotalInterest(principal, monthlyPayment, term) {
+                return monthlyPayment * term - principal;
+            }
+
+            const currentMonthlyPayment = calculateMonthlyPayment(currentPrincipal, originalRate, remainingTerm);
+            const currentTotalInterest = calculateTotalInterest(currentPrincipal, currentMonthlyPayment, remainingTerm);
+
+            const newMonthlyPayment1 = calculateMonthlyPayment(currentPrincipal, newRate1, newTerm);
+            const newTotalInterest1 = calculateTotalInterest(currentPrincipal, newMonthlyPayment1, newTerm);
+
+            const newMonthlyPayment2 = calculateMonthlyPayment(currentPrincipal, newRate2, newTerm);
+            const newTotalInterest2 = calculateTotalInterest(currentPrincipal, newMonthlyPayment2, newTerm);
+
+            const closingCosts = currentPrincipal * 0.03;
+
+            const monthlySavings1 = currentMonthlyPayment - newMonthlyPayment1;
+            const monthlySavings2 = currentMonthlyPayment - newMonthlyPayment2;
+            const totalInterestSavings1 = currentTotalInterest - newTotalInterest1;
+            const totalInterestSavings2 = currentTotalInterest - newTotalInterest2;
+            const breakEvenMonths1 = monthlySavings1 > 0 ? closingCosts / monthlySavings1 : Infinity;
+            const breakEvenMonths2 = monthlySavings2 > 0 ? closingCosts / monthlySavings2 : Infinity;
+
+            function formatBreakEven(months) {
+                if (months === Infinity) return "N/A";
+                const years = Math.floor(months / 12);
+                const remainingMonths = Math.round(months % 12);
+                if (years === 0) return `${remainingMonths} months`;
+                if (remainingMonths === 0) return `${years} years`;
+                return `${years} years, ${remainingMonths} months`;
+            }
+
+            const data = [
+                ["Current Loan", `${originalRate.toFixed(2)}%`, `$${currentMonthlyPayment.toFixed(2)}`, `$${currentTotalInterest.toFixed(2)}`, "N/A", "N/A", "N/A", "N/A"],
+                [`New Loan 1 (${newTerm} months)`, `${newRate1.toFixed(2)}%`, `$${newMonthlyPayment1.toFixed(2)}`, `$${newTotalInterest1.toFixed(2)}`, `$${closingCosts.toFixed(2)}`, `$${monthlySavings1.toFixed(2)}`, `$${totalInterestSavings1.toFixed(2)}`, formatBreakEven(breakEvenMonths1)],
+                [`New Loan 2 (${newTerm} months)`, `${newRate2.toFixed(2)}%`, `$${newMonthlyPayment2.toFixed(2)}`, `$${newTotalInterest2.toFixed(2)}`, `$${closingCosts.toFixed(2)}`, `$${monthlySavings2.toFixed(2)}`, `$${totalInterestSavings2.toFixed(2)}`, formatBreakEven(breakEvenMonths2)]
+            ];
+
+            const headers = ["Loan", "Interest Rate", "Monthly Payment", "Total Interest", "Closing Costs", "Monthly Savings", "Total Interest Savings", "Break-Even"];
+
+            let tableHtml = '<table><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+            data.forEach(row => {
+                tableHtml += '<tr>' + row.map(cell => `<td>${cell}</td>`).join('') + '</tr>';
+            });
+            tableHtml += '</table>';
+
+            document.getElementById('result').innerHTML = tableHtml;
+        }
+    </script>
+</body>
+</html>
