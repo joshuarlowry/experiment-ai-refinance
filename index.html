@@ -114,7 +114,7 @@
             const newTerm = parseInt(document.getElementById('newTerm').value);
 
             const today = new Date();
-            const monthsElapsed = (today.getFullYear() - originalStartDate.getFullYear()) * 12 + today.getMonth() - originalStartDate.getMonth();
+            const monthsElapsed = (today.getFullYear() - originalStartDate.getFullYear()) * 12 + today.getMonth() - originalStartDate.getMonth() + (today.getDate() < originalStartDate.getDate() ? -1 : 0);
             const remainingTerm = originalTerm - monthsElapsed;
 
             function calculateMonthlyPayment(principal, rate, term) {
